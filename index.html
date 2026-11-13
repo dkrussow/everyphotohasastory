@@ -346,6 +346,8 @@ footer a{text-decoration:none}
 .baby .fam .tale{background:var(--panel)}
 @media (max-width:900px){.baby{grid-template-columns:1fr;gap:36px}}
 </style>
+<!-- Visitor analytics: Umami (no cookies, no personal data) -->
+<script defer src="https://cloud.umami.is/script.js" data-website-id="f0c252c0-f2cf-45b4-b0f2-ae4fb7951b7f"></script>
 </head>
 <body>
 
@@ -602,6 +604,20 @@ footer a{text-decoration:none}
   // Feedback form address: set this once the Google Form exists
   var FEEDBACK_URL="https://forms.gle/AHGvTaH8c3FbhdZHA";
   document.querySelectorAll(".feedback-link").forEach(function(a){a.href=FEEDBACK_URL;if(FEEDBACK_URL!=="#"){a.target="_blank";a.rel="noopener"}});
+  // Analytics: label the clicks we want to count (see Umami dashboard > Events)
+  document.querySelectorAll('a[href*="/phoenix-recorder/install/"]').forEach(function(a){
+    a.setAttribute("data-umami-event","Install click");
+    a.setAttribute("data-umami-event-button",a.textContent.trim().slice(0,40));
+  });
+  document.querySelectorAll(".feedback-link").forEach(function(a){a.setAttribute("data-umami-event","Feedback click")});
+  function track(name,data){try{if(window.umami)umami.track(name,data)}catch(e){}}
+  // count how far down the page people read (each section once per visit)
+  if("IntersectionObserver" in window){
+    var seen={},io=new IntersectionObserver(function(es){es.forEach(function(e){
+      var id=e.target.id;if(e.isIntersecting&&!seen[id]){seen[id]=1;io.unobserve(e.target);track("Reached section",{section:id})}
+    })},{threshold:.4});
+    ["story","features","how","pricing","help"].forEach(function(id){var el=document.getElementById(id);if(el)io.observe(el)});
+  }
   // waveform bars (fixed pattern so it looks the same every time)
   var w=document.getElementById('wave'),n=48,bars=[];
   for(var i=0;i<n;i++){var h=18+Math.round(70*Math.abs(Math.sin(i*1.7)*Math.cos(i*.45)));var b=document.createElement('i');b.style.height=h+'%';w.appendChild(b);bars.push(b)}
@@ -611,7 +627,7 @@ footer a{text-decoration:none}
   var p=document.getElementById('player'),t=document.getElementById('ptime'),a=new Audio('audio/berlin-1968.mp3');
   function fmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
   p.querySelector('button').onclick=function(){if(a.paused){a.play().catch(function(){t.textContent='Coming soon'})}else a.pause()};
-  a.onplay=function(){p.classList.add('playing')};a.onpause=a.onended=function(){p.classList.remove('playing')};
+  var played=0;a.onplay=function(){p.classList.add('playing');if(!played){played=1;track("Story played")}};a.onpause=a.onended=function(){p.classList.remove('playing')};
   a.ontimeupdate=function(){var f=a.currentTime/(a.duration||37);bars.forEach(function(b,k){b.classList.toggle('on',k/n<f)});t.textContent=fmt((a.duration||37)-a.currentTime)};
 })();
 </script>
